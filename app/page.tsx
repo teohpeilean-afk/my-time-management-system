@@ -1,21 +1,19 @@
-export default function Home() {
+import { getTeamTodayStatus } from "@/lib/attendance/status";
+import { PunchClockCard } from "@/components/PunchClockCard";
+import { TeamStatusTable } from "@/components/TeamStatusTable";
+import { AutoRefresh } from "@/components/AutoRefresh";
+
+export default async function DashboardPage() {
+  const statuses = await getTeamTodayStatus();
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-8">
-      <div className="max-w-xl text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">vibe-stack-supabase</h1>
-        <p className="text-neutral-500">
-          Edit{" "}
-          <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-sm">
-            app/page.tsx
-          </code>{" "}
-          to start building.
-        </p>
-        <p className="text-xs text-neutral-400">
-          See{" "}
-          <code className="bg-neutral-100 px-1.5 py-0.5 rounded">CLAUDE.md</code>{" "}
-          for project conventions and gstack workflow.
-        </p>
+    <div className="space-y-6">
+      <AutoRefresh />
+      <PunchClockCard statuses={statuses} />
+      <div>
+        <h2 className="mb-2 font-semibold">Today — everyone</h2>
+        <TeamStatusTable statuses={statuses} />
       </div>
-    </main>
+    </div>
   );
 }
