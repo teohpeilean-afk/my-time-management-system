@@ -1,6 +1,23 @@
-# vibe-stack-supabase
+# my-time-management-system
 
-Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provision, build.
+A demo-first Time Management System for tracking employee attendance, overtime and leave —
+see [docs/PRD.md](docs/PRD.md) for the full brief.
+
+## What it does
+
+- **Clock in/out + breaks**, checked against an approved factory location (geofence).
+- **Shared live dashboard** — everyone sees everyone's status for the day.
+- **Attendance engine** (Postgres function, `supabase/migrations/0002_attendance_engine.sql`)
+  splits worked hours into normal / normal OT / rest-day / rest-day OT / public-holiday /
+  public-holiday OT per Malaysia Employment Act categories, and flags late arrivals, early
+  departures and missing punches.
+- **Exception review** — HR/supervisors review flagged days and can adjust the computed hours.
+- **Leave management** — annual / medical / hospitalization / unpaid / absent / other, with
+  approve/reject.
+- **Excel export** — payroll-ready attendance summary for a date range.
+
+No login wall yet — an "Acting as" employee switcher stands in for auth so the app is
+demoable without an account. Real auth + per-user lockdown is a later sprint.
 
 ## Stack
 
@@ -10,32 +27,29 @@ Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provisio
 | Language | TypeScript strict |
 | Styles | Tailwind CSS v4 (CSS-first, no config file) |
 | Auth + DB | Supabase (`@supabase/ssr`) |
-| Package manager | Bun |
 | Deploy | Vercel |
 
 ## Quick start
 
 ```bash
-bun install
-cp .env.example .env.local   # fill in your Supabase keys
-bun dev
+npm install
+vercel link
+vercel env pull .env.local
+npm run dev
 ```
 
-Open http://localhost:3000. Edit `app/page.tsx` to start building.
+Open http://localhost:3000.
 
-## Provisioning a new project
+## Database
 
-Use the `/new-vibe-project <name>` skill (see `claude-dotfiles` repo) which:
-1. Clones this template and renames it
-2. Creates a new GitHub repo and pushes
-3. Creates a Supabase project and injects URL + anon key
-4. Creates a Vercel project linked to the GitHub repo
-5. Triggers first deploy and returns the preview URL
+Schema + seed data live in `supabase/migrations/`. Apply them via the Supabase CLI
+(`supabase link && supabase db push`) or by pasting each file, in order, into the
+Supabase dashboard's SQL editor:
+
+1. `0001_core_schema.sql` — tables, enums, RLS policies
+2. `0002_attendance_engine.sql` — the hours/OT computation engine + triggers
+3. `0003_seed_data.sql` — a demo team, approved location, holidays and a week of punches
 
 ## Working with AI
 
-See [CLAUDE.md](CLAUDE.md) for conventions. This repo is pre-wired for gstack — start with `/office-hours`.
-
-## Switching to Neon
-
-If you need Postgres without Supabase (e.g. prefer Drizzle ORM + Clerk for auth), a `vibe-stack-neon` variant is planned. For now: fork this and swap `@supabase/ssr` for `drizzle-orm` + `@neondatabase/serverless`, add Clerk or NextAuth.
+See [CLAUDE.md](CLAUDE.md) for conventions.
