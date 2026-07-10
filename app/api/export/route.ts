@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("attendance_days")
-    .select("*, employee:employees(id, full_name, staff_no)")
+    .select("*, employee:employees!attendance_days_employee_id_fkey(id, full_name, staff_no)")
     .gte("work_date", start)
     .lte("work_date", end)
     .order("work_date", { ascending: true });

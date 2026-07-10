@@ -9,7 +9,7 @@ export async function getLeaveRequests(): Promise<LeaveRequestWithEmployee[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("leave_requests")
-    .select("*, employee:employees(id, full_name, staff_no)")
+    .select("*, employee:employees!leave_requests_employee_id_fkey(id, full_name, staff_no)")
     .order("created_at", { ascending: false });
 
   if (error || !data) return [];

@@ -13,3 +13,4 @@ next-env.d.ts
 .env*
 .claude/settings.local.json
 .claude/launch.json
+supabase/.temp/

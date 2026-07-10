@@ -140,10 +140,10 @@ begin
 
   -- belt-and-braces: the punch/leave triggers already computed these, but make
   -- sure the full window is covered even if a step above was skipped.
-  perform fn_recompute_range(v_ahmad, current_date - 9, current_date + 1);
-  perform fn_recompute_range(v_siti, current_date - 9, current_date + 1);
-  perform fn_recompute_range(v_kumar, current_date - 9, current_date + 1);
-  perform fn_recompute_range(v_wong, current_date - 9, current_date + 1);
-  perform fn_recompute_range(v_farah, current_date - 9, current_date + 1);
-  perform fn_recompute_range(v_devika, current_date - 9, current_date + 1);
+  perform fn_recompute_range(v_ahmad, current_date - 9, current_date);
+  perform fn_recompute_range(v_siti, current_date - 9, current_date);
+  perform fn_recompute_range(v_kumar, current_date - 9, current_date);
+  perform fn_recompute_range(v_wong, current_date - 9, current_date);
+  perform fn_recompute_range(v_farah, current_date - 9, current_date);
+  perform fn_recompute_range(v_devika, current_date - 9, current_date);
 end $$;
