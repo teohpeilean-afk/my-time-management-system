@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { haversineMeters } from "@/lib/attendance/geo";
-import type { PunchType } from "@/lib/types";
+import { nextActionsFor } from "@/lib/attendance/status";
+import { todayInKL } from "@/lib/attendance/format";
+import type { AttendancePunch, PunchType } from "@/lib/types";
 
 export interface RecordPunchResult {
   ok: boolean;
@@ -22,6 +24,30 @@ export async function recordPunch(
   }
 
   const supabase = await createClient();
+
+  const today = todayInKL();
+  const startOfDay = new Date(`${today}T00:00:00+08:00`).toISOString();
+  const endOfDay = new Date(`${today}T23:59:59.999+08:00`).toISOString();
+  const { data: todaysPunches } = await supabase
+    .from("attendance_punches")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .gte("punch_time", startOfDay)
+    .lte("punch_time", endOfDay)
+    .order("punch_time", { ascending: true });
+
+  const lastPunch = ((todaysPunches as AttendancePunch[]) ?? []).at(-1) ?? null;
+  const allowed = nextActionsFor(lastPunch?.punch_type ?? null);
+  if (!allowed.includes(punchType)) {
+    return {
+      ok: false,
+      withinGeofence: false,
+      locationName: null,
+      error: lastPunch
+        ? `Can't record ${punchType.replace("_", " ")} — last punch today was ${lastPunch.punch_type.replace("_", " ")}.`
+        : `Can't record ${punchType.replace("_", " ")} before clocking in.`,
+    };
+  }
 
   const { data: locations } = await supabase
     .from("approved_locations")

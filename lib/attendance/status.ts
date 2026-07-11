@@ -9,7 +9,7 @@ export interface EmployeeTodayStatus {
   nextActions: PunchType[];
 }
 
-function nextActionsFor(lastType: PunchType | null): PunchType[] {
+export function nextActionsFor(lastType: PunchType | null): PunchType[] {
   switch (lastType) {
     case null:
       return ["clock_in"];
