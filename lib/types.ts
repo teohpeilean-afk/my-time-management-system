@@ -66,6 +66,26 @@ export interface LeaveRequest {
   created_at: string;
 }
 
+export interface ShiftTemplate {
+  id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  active: boolean;
+}
+
+export interface RosterAssignment {
+  id: string;
+  employee_id: string;
+  work_date: string;
+  shift_template_id: string | null;
+  custom_start: string | null;
+  custom_end: string | null;
+  custom_break_minutes: number | null;
+  note: string | null;
+}
+
 export interface AttendanceDay {
   id: string;
   employee_id: string;
