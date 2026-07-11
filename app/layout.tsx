@@ -16,18 +16,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: employees } = await supabase
-    .from("employees")
-    .select("*")
-    .eq("active", true)
-    .order("full_name");
+  const [{ data: employees }, { data: { user } }] = await Promise.all([
+    supabase.from("employees").select("*").eq("active", true).order("full_name"),
+    supabase.auth.getUser(),
+  ]);
 
   return (
     <html lang="en">
       <body className="antialiased bg-neutral-50 text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
         <EmployeeProvider employees={(employees as Employee[]) ?? []}>
           <div className="flex min-h-screen flex-col sm:flex-row">
-            <Sidebar />
+            <Sidebar authEmail={user?.email ?? null} />
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
           </div>
         </EmployeeProvider>

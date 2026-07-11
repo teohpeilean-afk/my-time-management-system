@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { EmployeeSwitcher } from "@/components/EmployeeSwitcher";
+import { AuthStatus } from "@/components/AuthStatus";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
@@ -36,7 +37,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ authEmail }: { authEmail: string | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -77,6 +78,9 @@ export function Sidebar() {
           <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
             <EmployeeSwitcher />
           </div>
+          <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
+            <AuthStatus email={authEmail} />
+          </div>
         </div>
       )}
 
@@ -90,6 +94,9 @@ export function Sidebar() {
         </nav>
         <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <EmployeeSwitcher />
+        </div>
+        <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
+          <AuthStatus email={authEmail} />
         </div>
       </aside>
     </>
