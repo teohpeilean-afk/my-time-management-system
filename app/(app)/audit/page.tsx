@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { formatDate, formatTime } from "@/lib/attendance/format";
+import { getCurrentSession } from "@/lib/session";
+import { AccessDenied } from "@/components/AccessDenied";
 
 interface AuditLogRow {
   id: string;
@@ -13,6 +15,11 @@ interface AuditLogRow {
 }
 
 export default async function AuditPage() {
+  const { employee } = await getCurrentSession();
+  if (employee?.role !== "hr") {
+    return <AccessDenied />;
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("audit_logs")

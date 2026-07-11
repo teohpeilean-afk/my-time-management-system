@@ -19,11 +19,6 @@ export default function SignupPage() {
           Log in
         </Link>
       </p>
-      <p className="text-center text-xs text-neutral-400">
-        <Link href="/" className="underline underline-offset-2 hover:text-neutral-600 dark:hover:text-neutral-300">
-          Continue without an account
-        </Link>
-      </p>
     </div>
   );
 }

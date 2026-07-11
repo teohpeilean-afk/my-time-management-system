@@ -15,6 +15,7 @@ export interface Employee {
   full_name: string;
   staff_no: string;
   role: EmployeeRole;
+  supervisor_id: string | null;
   rest_day_of_week: number;
   shift_start: string;
   shift_end: string;

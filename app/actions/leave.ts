@@ -40,7 +40,7 @@ export async function reviewLeaveRequest(
   note: string,
 ) {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("leave_requests")
     .update({
       status,
@@ -48,9 +48,15 @@ export async function reviewLeaveRequest(
       reviewed_at: new Date().toISOString(),
       review_note: note || null,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
 
   if (error) return { ok: false, error: error.message };
+  // RLS silently matches zero rows instead of erroring when the actor isn't
+  // this employee's manager or hr — that's not a real success.
+  if (!data || data.length === 0) {
+    return { ok: false, error: "You don't have permission to review this request." };
+  }
   revalidatePath("/leave");
   return { ok: true };
 }

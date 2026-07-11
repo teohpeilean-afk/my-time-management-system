@@ -3,22 +3,33 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { EmployeeSwitcher } from "@/components/EmployeeSwitcher";
+import { useActiveEmployee } from "@/components/EmployeeContext";
 import { AuthStatus } from "@/components/AuthStatus";
+import type { EmployeeRole } from "@/lib/types";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/leave", label: "Leave" },
-  { href: "/review", label: "Review" },
-  { href: "/export", label: "Export" },
-  { href: "/holidays", label: "Holidays" },
-  { href: "/audit", label: "Audit log" },
+const NAV_ITEMS: { href: string; label: string; roles: EmployeeRole[] }[] = [
+  { href: "/", label: "Dashboard", roles: ["worker", "supervisor", "hr"] },
+  { href: "/leave", label: "Leave", roles: ["worker", "supervisor", "hr"] },
+  { href: "/review", label: "Review", roles: ["worker", "supervisor", "hr"] },
+  { href: "/export", label: "Export", roles: ["supervisor", "hr"] },
+  { href: "/holidays", label: "Holidays", roles: ["worker", "supervisor", "hr"] },
+  { href: "/team", label: "Team", roles: ["hr"] },
+  { href: "/audit", label: "Audit log", roles: ["hr"] },
 ];
 
-function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+function NavLinks({
+  pathname,
+  role,
+  onNavigate,
+}: {
+  pathname: string;
+  role: EmployeeRole | null;
+  onNavigate?: () => void;
+}) {
+  const items = NAV_ITEMS.filter((item) => role && item.roles.includes(role));
   return (
     <>
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
         return (
           <Link
@@ -39,9 +50,24 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
+function WhoAmI({ className }: { className?: string }) {
+  const { activeEmployee } = useActiveEmployee();
+  if (!activeEmployee) return null;
+  return (
+    <div className={className}>
+      <p className="truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">
+        {activeEmployee.full_name}
+      </p>
+      <p className="text-xs capitalize text-neutral-400">{activeEmployee.role}</p>
+    </div>
+  );
+}
+
 export function Sidebar({ authEmail }: { authEmail: string | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { activeEmployee } = useActiveEmployee();
+  const role = activeEmployee?.role ?? null;
 
   useEffect(() => {
     setOpen(false);
@@ -75,11 +101,9 @@ export function Sidebar({ authEmail }: { authEmail: string | null }) {
       {open && (
         <div className="border-b border-neutral-200 px-3 pb-4 sm:hidden dark:border-neutral-800">
           <nav className="flex flex-col gap-1 pt-2">
-            <NavLinks pathname={pathname} onNavigate={() => setOpen(false)} />
+            <NavLinks pathname={pathname} role={role} onNavigate={() => setOpen(false)} />
           </nav>
-          <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
-            <EmployeeSwitcher />
-          </div>
+          <WhoAmI className="mt-3 border-t border-neutral-200 px-2 pt-3 dark:border-neutral-800" />
           <div className="mt-3 border-t border-neutral-200 pt-3 dark:border-neutral-800">
             <AuthStatus email={authEmail} />
           </div>
@@ -92,11 +116,9 @@ export function Sidebar({ authEmail }: { authEmail: string | null }) {
           <span className="font-semibold tracking-tight">TMS</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-2 pb-4">
-          <NavLinks pathname={pathname} />
+          <NavLinks pathname={pathname} role={role} />
         </nav>
-        <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
-          <EmployeeSwitcher />
-        </div>
+        <WhoAmI className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800" />
         <div className="border-t border-neutral-200 px-4 py-3 dark:border-neutral-800">
           <AuthStatus email={authEmail} />
         </div>

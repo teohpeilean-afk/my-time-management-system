@@ -30,12 +30,13 @@ function ExceptionTags({ day }: { day: AttendanceDayWithEmployee }) {
   );
 }
 
-function ReviewRow({ day }: { day: AttendanceDayWithEmployee }) {
+function ReviewRow({ day, canOverride }: { day: AttendanceDayWithEmployee; canOverride: boolean }) {
   const { activeEmployeeId } = useActiveEmployee();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState(day.review_note ?? "");
+  const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<AdjustedMinutes>({
     normal_minutes: day.normal_minutes,
     normal_ot_minutes: day.normal_ot_minutes,
@@ -46,8 +47,13 @@ function ReviewRow({ day }: { day: AttendanceDayWithEmployee }) {
   });
 
   function handleSave() {
+    setError(null);
     startTransition(async () => {
-      await markReviewed(day.id, activeEmployeeId ?? "", note, fields);
+      const result = await markReviewed(day.id, activeEmployeeId ?? "", note, fields);
+      if (!result.ok) {
+        setError(result.error ?? "Could not save.");
+        return;
+      }
       router.refresh();
     });
   }
@@ -75,10 +81,19 @@ function ReviewRow({ day }: { day: AttendanceDayWithEmployee }) {
           onClick={() => setOpen((v) => !v)}
           className="text-sm text-blue-600 underline dark:text-blue-400"
         >
-          {open ? "Close" : "Review"}
+          {open ? "Close" : canOverride ? "Review" : "Details"}
         </button>
       </td>
-      {open && (
+      {open && !canOverride && (
+        <td colSpan={4} className="px-4 py-2 text-sm text-neutral-500">
+          {day.review_note ? (
+            <p>Reviewer note: {day.review_note}</p>
+          ) : (
+            <p>No reviewer note yet. Only your supervisor or HR can adjust this day.</p>
+          )}
+        </td>
+      )}
+      {open && canOverride && (
         <td colSpan={4} className="px-4 py-2">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {(
@@ -114,6 +129,7 @@ function ReviewRow({ day }: { day: AttendanceDayWithEmployee }) {
               onChange={(e) => setNote(e.target.value)}
             />
           </label>
+          {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="mt-3 flex gap-2">
             <button
               disabled={pending}
@@ -136,7 +152,13 @@ function ReviewRow({ day }: { day: AttendanceDayWithEmployee }) {
   );
 }
 
-export function ReviewTable({ days }: { days: AttendanceDayWithEmployee[] }) {
+export function ReviewTable({
+  days,
+  canOverride,
+}: {
+  days: AttendanceDayWithEmployee[];
+  canOverride: boolean;
+}) {
   if (days.length === 0) {
     return (
       <p className="rounded-lg border border-neutral-200 p-4 text-sm text-neutral-500 dark:border-neutral-800">
@@ -158,7 +180,7 @@ export function ReviewTable({ days }: { days: AttendanceDayWithEmployee[] }) {
         </thead>
         <tbody>
           {days.map((day) => (
-            <ReviewRow key={day.id} day={day} />
+            <ReviewRow key={day.id} day={day} canOverride={canOverride} />
           ))}
         </tbody>
       </table>

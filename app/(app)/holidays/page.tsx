@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentSession } from "@/lib/session";
 import { HolidayManager } from "@/components/HolidayManager";
 import type { PublicHoliday } from "@/lib/types";
 
 export default async function HolidaysPage() {
+  const { employee } = await getCurrentSession();
   const supabase = await createClient();
   const { data } = await supabase
     .from("public_holidays")
@@ -18,7 +20,10 @@ export default async function HolidaysPage() {
           gazetted national + state holiday list for the current year.
         </p>
       </div>
-      <HolidayManager holidays={(data as PublicHoliday[]) ?? []} />
+      <HolidayManager
+        holidays={(data as PublicHoliday[]) ?? []}
+        canWrite={employee?.role === "hr"}
+      />
     </div>
   );
 }

@@ -17,11 +17,17 @@ export function LeaveRequestList({ requests }: { requests: LeaveRequestWithEmplo
   const { activeEmployee } = useActiveEmployee();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const canReview = activeEmployee?.role === "supervisor" || activeEmployee?.role === "hr";
 
   function handleReview(id: string, status: "approved" | "rejected") {
+    setError(null);
     startTransition(async () => {
-      await reviewLeaveRequest(id, activeEmployee?.id ?? "", status, "");
+      const result = await reviewLeaveRequest(id, activeEmployee?.id ?? "", status, "");
+      if (!result.ok) {
+        setError(result.error ?? "Could not update this request.");
+        return;
+      }
       router.refresh();
     });
   }
@@ -35,8 +41,10 @@ export function LeaveRequestList({ requests }: { requests: LeaveRequestWithEmplo
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-      <table className="w-full text-sm">
+    <div className="space-y-2">
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+        <table className="w-full text-sm">
         <thead className="bg-neutral-100 text-left text-neutral-500 dark:bg-neutral-900">
           <tr>
             <th className="px-4 py-2 font-medium">Employee</th>
@@ -90,7 +98,8 @@ export function LeaveRequestList({ requests }: { requests: LeaveRequestWithEmplo
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

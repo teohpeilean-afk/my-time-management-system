@@ -1,11 +1,18 @@
 import { todayInKL } from "@/lib/attendance/format";
+import { getCurrentSession } from "@/lib/session";
+import { AccessDenied } from "@/components/AccessDenied";
 
 function firstOfMonth(): string {
   const today = todayInKL();
   return `${today.slice(0, 7)}-01`;
 }
 
-export default function ExportPage() {
+export default async function ExportPage() {
+  const { employee } = await getCurrentSession();
+  if (employee?.role !== "hr" && employee?.role !== "supervisor") {
+    return <AccessDenied />;
+  }
+
   return (
     <div className="space-y-4">
       <div>

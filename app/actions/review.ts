@@ -28,7 +28,7 @@ export async function markReviewed(
     .eq("id", dayId)
     .maybeSingle();
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("attendance_days")
     .update({
       review_status: "reviewed",
@@ -37,10 +37,16 @@ export async function markReviewed(
       review_note: note || null,
       ...(adjusted ?? {}),
     })
-    .eq("id", dayId);
+    .eq("id", dayId)
+    .select("id");
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+  // RLS silently matches zero rows instead of erroring — that's not a real
+  // success, just an actor who isn't this employee's manager or hr.
+  if (!updated || updated.length === 0) {
+    return { ok: false, error: "You don't have permission to review this day." };
   }
 
   await supabase.from("audit_logs").insert({

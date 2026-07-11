@@ -1,48 +1,25 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext } from "react";
 import type { Employee } from "@/lib/types";
 
-const STORAGE_KEY = "tms-active-employee-id";
-
 interface EmployeeContextValue {
-  employees: Employee[];
-  activeEmployeeId: string | null;
   activeEmployee: Employee | null;
-  setActiveEmployeeId: (id: string) => void;
+  activeEmployeeId: string | null;
 }
 
 const EmployeeContext = createContext<EmployeeContextValue | null>(null);
 
 export function EmployeeProvider({
-  employees,
+  employee,
   children,
 }: {
-  employees: Employee[];
+  employee: Employee | null;
   children: React.ReactNode;
 }) {
-  const [activeEmployeeId, setActiveEmployeeIdState] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored && employees.some((e) => e.id === stored)) {
-      setActiveEmployeeIdState(stored);
-    } else if (employees.length > 0) {
-      setActiveEmployeeIdState(employees[0].id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function setActiveEmployeeId(id: string) {
-    setActiveEmployeeIdState(id);
-    window.localStorage.setItem(STORAGE_KEY, id);
-  }
-
-  const activeEmployee = employees.find((e) => e.id === activeEmployeeId) ?? null;
-
   return (
     <EmployeeContext.Provider
-      value={{ employees, activeEmployeeId, activeEmployee, setActiveEmployeeId }}
+      value={{ activeEmployee: employee, activeEmployeeId: employee?.id ?? null }}
     >
       {children}
     </EmployeeContext.Provider>

@@ -1,6 +1,18 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const PUBLIC_PATHS = ["/login", "/signup"];
+
+function redirectPreservingCookies(request: NextRequest, from: NextResponse, path: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = path;
+  const redirectResponse = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie.name, cookie.value);
+  });
+  return redirectResponse;
+}
+
 export async function updateSession(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
 
@@ -35,7 +47,21 @@ export async function updateSession(request: NextRequest) {
     });
 
     // Refresh session so it doesn't expire while user is active
-    await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { pathname } = request.nextUrl;
+    const isPublicPath = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+    const isHealthCheck = pathname === "/api/health";
+
+    if (!user && !isPublicPath && !isHealthCheck) {
+      return redirectPreservingCookies(request, response, "/login");
+    }
+    if (user && isPublicPath) {
+      return redirectPreservingCookies(request, response, "/");
+    }
+
     return response;
   } catch {
     // Never let an auth hiccup crash the entire edge middleware
