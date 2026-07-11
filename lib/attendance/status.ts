@@ -23,13 +23,21 @@ export function nextActionsFor(lastType: PunchType | null): PunchType[] {
   }
 }
 
-export async function getTeamTodayStatus(): Promise<EmployeeTodayStatus[]> {
+export interface TeamTodayStatusResult {
+  ok: boolean;
+  statuses: EmployeeTodayStatus[];
+}
+
+export async function getTeamTodayStatus(): Promise<TeamTodayStatusResult> {
   const supabase = await createClient();
   const today = todayInKL();
   const startOfDay = new Date(`${today}T00:00:00+08:00`).toISOString();
   const endOfDay = new Date(`${today}T23:59:59.999+08:00`).toISOString();
 
-  const [{ data: employees }, { data: punches }] = await Promise.all([
+  const [
+    { data: employees, error: employeesError },
+    { data: punches, error: punchesError },
+  ] = await Promise.all([
     supabase.from("employees").select("*").eq("active", true).order("full_name"),
     supabase
       .from("attendance_punches")
@@ -39,6 +47,10 @@ export async function getTeamTodayStatus(): Promise<EmployeeTodayStatus[]> {
       .order("punch_time", { ascending: true }),
   ]);
 
+  if (employeesError || punchesError || !employees) {
+    return { ok: false, statuses: [] };
+  }
+
   const punchesByEmployee = new Map<string, AttendancePunch[]>();
   for (const punch of (punches as AttendancePunch[]) ?? []) {
     const list = punchesByEmployee.get(punch.employee_id) ?? [];
@@ -46,7 +58,7 @@ export async function getTeamTodayStatus(): Promise<EmployeeTodayStatus[]> {
     punchesByEmployee.set(punch.employee_id, list);
   }
 
-  return ((employees as Employee[]) ?? []).map((employee) => {
+  const statuses = (employees as Employee[]).map((employee) => {
     const list = punchesByEmployee.get(employee.id) ?? [];
     const lastPunch = list.length > 0 ? list[list.length - 1] : null;
     const firstClockIn = list.find((p) => p.punch_type === "clock_in") ?? null;
@@ -57,4 +69,6 @@ export async function getTeamTodayStatus(): Promise<EmployeeTodayStatus[]> {
       nextActions: nextActionsFor(lastPunch?.punch_type ?? null),
     };
   });
+
+  return { ok: true, statuses };
 }

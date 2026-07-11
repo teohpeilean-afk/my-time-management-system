@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/review", label: "Review" },
   { href: "/export", label: "Export" },
   { href: "/holidays", label: "Holidays" },
+  { href: "/audit", label: "Audit log" },
 ];
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {

@@ -21,7 +21,12 @@ const EXCEPTION_FILTER = [
   "and(worked_minutes.eq.0,leave_type.is.null,is_rest_day.eq.false,is_public_holiday.eq.false)",
 ].join(",");
 
-export async function getPendingReviewDays(days = 30): Promise<AttendanceDayWithEmployee[]> {
+export interface PendingReviewResult {
+  ok: boolean;
+  days: AttendanceDayWithEmployee[];
+}
+
+export async function getPendingReviewDays(days = 30): Promise<PendingReviewResult> {
   const supabase = await createClient();
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
@@ -34,6 +39,6 @@ export async function getPendingReviewDays(days = 30): Promise<AttendanceDayWith
     .or(EXCEPTION_FILTER)
     .order("work_date", { ascending: false });
 
-  if (error || !data) return [];
-  return data as unknown as AttendanceDayWithEmployee[];
+  if (error || !data) return { ok: false, days: [] };
+  return { ok: true, days: data as unknown as AttendanceDayWithEmployee[] };
 }
