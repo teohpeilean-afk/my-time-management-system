@@ -1,13 +1,37 @@
-Problem: Existing usage of electronic time punch card machine to capture attendance of employees is very time consuming and manual for payroll calculation.  A Time Management System that can capture the attendance of employees for payroll computation where employees using their own handphone to capture their own attendance at a fixed or designated location instead of using punch card which HR need to manually calculate the normal working hours, overtimes, working on Sunday and or public holiday. The output can be in excel format for easy calculation of salary.
-For: My team /Admin Department
-1.	Core things to track: Record each worker’s clock-in and clock-out, break-start and break-end.
-2.	Confirm that the worker is at an approved factory location.
-3.	calculate working hours, late arrival, early departure and missing punches.
-4.	Separate normal hours, normal-day overtime, rest-day work and public-holiday work, rest-day and public holiday OT.
-5.	Allow HR or supervisors to review exceptions.
-6.	Export an Excel attendance summary for salary calculation. 
-Also allow to indicate the various kind of leaves such as annual Leave, Medical leave, hospitalization leave, unpaid leave, absent and etc.
-The one workflow (must work v1): A team member logs the work and everyone sees the shared, up-to-date view.
-Success in a week: My team runs the real workflow here instead of checking the punch card, payroll computation must comply with Malaysia Labour laws
+# Product Requirements — My Time Management System
 
-Build focus: This is a multi-user internal team tool: design for shared data across several users with clear roles, an operational dashboard, and reliability for daily use.
+## Problem
+Factory HR manually calculates punch-card records for payroll: tedious, error-prone, and non-compliant with Malaysia Labour Law OT rules. There is no audit trail and no visibility into late arrivals, missing punches, or leave balances.
+
+## Target Users
+- **Employees** — clock in/out from their own mobile at the factory.
+- **HR / Admin** — review exceptions, approve/reject leaves, export payroll summary.
+- **Supervisors** — monitor their team's daily attendance in real time.
+
+## Core Objects
+| Object | Purpose |
+|---|---|
+| `employees` | Staff profile + shift config |
+| `approved_locations` | GPS geofence boundaries |
+| `attendance_punches` | Clock-in, break, clock-out per day |
+| `leaves` | AL / MC / Hospitalisation / Unpaid / Absent |
+| `public_holidays` | Holiday calendar for day-type classification |
+| `audit_logs` | Every HR override recorded |
+
+## MVP Must-Haves (v1)
+- [ ] Employee punches clock-in, break-start, break-end, clock-out from mobile
+- [ ] GPS verified against at least one approved location
+- [ ] System auto-computes normal hours, OT, rest-day, public-holiday hours (Malaysia EA 1955 rules)
+- [ ] Leave entry form with all Malaysia leave types
+- [ ] HR exceptions dashboard: late, early departure, missing punch, with override capability
+- [ ] Monthly Excel export per employee (payroll-ready columns)
+- [ ] App works without login in v1 (demo-first); auth added in Lock-it-down sprint
+
+## Non-Goals (v1)
+- Payslip generation
+- Biometric / QR check-in
+- Multi-tenant SaaS
+- Payroll software API integration
+
+## Success Criterion
+Ahmad clocks in at 08:05 from the factory floor → system marks him on-time, records GPS pass → at 17:00 he clocks out → system calculates 8 h normal, 0 OT → HR opens the monthly export → Excel shows Ahmad's correct hours and leave days, matching Malaysia EA 1955 — all without touching a punch card.
