@@ -19,6 +19,15 @@ export async function markReviewed(
   adjusted?: AdjustedMinutes,
 ) {
   const supabase = await createClient();
+
+  const { data: before } = await supabase
+    .from("attendance_days")
+    .select(
+      "normal_minutes, normal_ot_minutes, rest_day_minutes, rest_day_ot_minutes, ph_minutes, ph_ot_minutes, review_note",
+    )
+    .eq("id", dayId)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("attendance_days")
     .update({
@@ -33,6 +42,16 @@ export async function markReviewed(
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  await supabase.from("audit_logs").insert({
+    actor: reviewerId || null,
+    action: "hr_override_attendance_day",
+    target_table: "attendance_days",
+    target_id: dayId,
+    old_value: before ?? null,
+    new_value: { ...(adjusted ?? {}), review_note: note || null },
+  });
+
   revalidatePath("/review");
   return { ok: true };
 }

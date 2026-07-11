@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/leave", label: "Leave" },
   { href: "/review", label: "Review" },
   { href: "/export", label: "Export" },
+  { href: "/holidays", label: "Holidays" },
 ];
 
 function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {

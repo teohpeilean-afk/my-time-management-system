@@ -56,6 +56,16 @@ export async function GET(request: NextRequest) {
   const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
   const bytes = new Uint8Array(buffer);
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  await supabase.from("audit_logs").insert({
+    actor: user?.email ?? "anonymous (demo)",
+    action: "export_attendance_summary",
+    target_table: "attendance_days",
+    new_value: { start, end, row_count: rows.length },
+  });
+
   return new NextResponse(new Blob([bytes]), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
