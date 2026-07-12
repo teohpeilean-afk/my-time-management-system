@@ -9,7 +9,14 @@ import type { AttendanceDayWithEmployee } from "@/lib/attendance/review";
 
 function ExceptionTags({ day }: { day: AttendanceDayWithEmployee }) {
   const tags: string[] = [];
-  if (day.missing_punch) tags.push("Missing punch");
+  const absent =
+    day.worked_minutes === 0 &&
+    !day.first_clock_in &&
+    !day.leave_type &&
+    !day.is_rest_day &&
+    !day.is_public_holiday;
+  if (absent) tags.push("Absent");
+  if (day.missing_punch && !absent) tags.push("Missing punch");
   if (day.late_minutes > 0) tags.push(`Late ${day.late_minutes}m`);
   if (day.early_leave_minutes > 0) tags.push(`Early leave ${day.early_leave_minutes}m`);
   if (day.is_rest_day) tags.push("Rest day");
