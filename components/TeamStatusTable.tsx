@@ -51,6 +51,12 @@ export function TeamStatusTable({ statuses }: { statuses: EmployeeTodayStatus[] 
                   {lastPunch && !lastPunch.within_geofence && (
                     <span className="ml-2 text-xs text-red-600 dark:text-red-400">⚠ off-site</span>
                   )}
+                  {lastPunch && lastPunch.qr_ok === false && (
+                    <span className="ml-2 text-xs text-red-600 dark:text-red-400">⚠ bad QR</span>
+                  )}
+                  {lastPunch && lastPunch.qr_ok === null && (
+                    <span className="ml-2 text-xs text-neutral-400">no QR</span>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-neutral-600 dark:text-neutral-400">
                   {formatTime(firstClockIn?.punch_time ?? null)}

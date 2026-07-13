@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useActiveEmployee } from "@/components/EmployeeContext";
+import { QrScanStep } from "@/components/QrScanStep";
 import { recordPunch } from "@/app/actions/punches";
 import { formatTime } from "@/lib/attendance/format";
 import type { EmployeeTodayStatus } from "@/lib/attendance/status";
@@ -22,14 +23,19 @@ const STATUS_LABELS: Record<PunchType, string> = {
   clock_out: "Clocked out",
 };
 
-function getLocation(): Promise<{ lat: number; lng: number } | null> {
+function getLocation(): Promise<{ lat: number; lng: number; accuracy: number | null } | null> {
   return new Promise((resolve) => {
     if (!("geolocation" in navigator)) {
       resolve(null);
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy ?? null,
+        }),
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 8000 },
     );
@@ -41,6 +47,7 @@ export function PunchClockCard({ statuses }: { statuses: EmployeeTodayStatus[] }
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [scanFor, setScanFor] = useState<PunchType | null>(null);
 
   const own = statuses.find((s) => s.employee.id === activeEmployee?.id) ?? null;
 
@@ -52,22 +59,26 @@ export function PunchClockCard({ statuses }: { statuses: EmployeeTodayStatus[] }
     );
   }
 
-  function handlePunch(punchType: PunchType) {
+  function doPunch(punchType: PunchType, qrPayload: string | null) {
+    setScanFor(null);
     setMessage(null);
     startTransition(async () => {
       const coords = await getLocation();
-      const result = await recordPunch(activeEmployee!.id, punchType, coords);
+      const result = await recordPunch(activeEmployee!.id, punchType, coords, qrPayload);
       if (!result.ok) {
         setMessage(`Failed: ${result.error}`);
         return;
       }
-      if (!coords) {
-        setMessage(`${LABELS[punchType]} recorded — location unavailable, flagged for review.`);
-      } else if (!result.withinGeofence) {
-        setMessage(`${LABELS[punchType]} recorded — outside approved location, flagged for review.`);
-      } else {
-        setMessage(`${LABELS[punchType]} recorded at ${result.locationName}.`);
-      }
+      const flags: string[] = [];
+      if (!coords) flags.push("location unavailable");
+      else if (!result.withinGeofence) flags.push("outside approved location");
+      if (result.qrOk === false) flags.push("QR did not verify");
+      if (result.qrOk === null) flags.push("no QR scan");
+      setMessage(
+        flags.length > 0
+          ? `${LABELS[punchType]} recorded — ${flags.join(", ")}; flagged for review.`
+          : `${LABELS[punchType]} recorded at ${result.locationName}.`,
+      );
       router.refresh();
     });
   }
@@ -85,21 +96,32 @@ export function PunchClockCard({ statuses }: { statuses: EmployeeTodayStatus[] }
           Clocked in since {formatTime(own.firstClockIn.punch_time)}
         </p>
       )}
-      <div className="mt-4 flex flex-wrap gap-2">
-        {own.nextActions.length === 0 && (
-          <span className="text-sm text-neutral-500">Day complete — clocked out.</span>
-        )}
-        {own.nextActions.map((action) => (
-          <button
-            key={action}
-            disabled={pending}
-            onClick={() => handlePunch(action)}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
-            {LABELS[action]}
-          </button>
-        ))}
-      </div>
+      {scanFor ? (
+        <div className="mt-4">
+          <QrScanStep
+            actionLabel={LABELS[scanFor]}
+            onResult={(payload) => doPunch(scanFor, payload)}
+            onSkip={() => doPunch(scanFor, null)}
+            onCancel={() => setScanFor(null)}
+          />
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {own.nextActions.length === 0 && (
+            <span className="text-sm text-neutral-500">Day complete — clocked out.</span>
+          )}
+          {own.nextActions.map((action) => (
+            <button
+              key={action}
+              disabled={pending}
+              onClick={() => setScanFor(action)}
+              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+            >
+              {LABELS[action]}
+            </button>
+          ))}
+        </div>
+      )}
       {message && <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">{message}</p>}
     </div>
   );

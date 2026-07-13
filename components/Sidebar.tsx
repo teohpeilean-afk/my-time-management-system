@@ -14,6 +14,7 @@ const NAV_ITEMS: { href: string; label: string; roles: EmployeeRole[] }[] = [
   { href: "/roster", label: "Roster", roles: ["supervisor", "hr"] },
   { href: "/export", label: "Export", roles: ["supervisor", "hr"] },
   { href: "/holidays", label: "Holidays", roles: ["worker", "supervisor", "hr"] },
+  { href: "/locations", label: "Locations", roles: ["hr"] },
   { href: "/team", label: "Team", roles: ["hr"] },
   { href: "/audit", label: "Audit log", roles: ["hr"] },
 ];

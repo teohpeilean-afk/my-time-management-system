@@ -50,8 +50,16 @@ export interface AttendancePunch {
   latitude: number | null;
   longitude: number | null;
   distance_meters: number | null;
+  accuracy_meters: number | null;
   within_geofence: boolean;
+  qr_ok: boolean | null;
   note: string | null;
+}
+
+export interface LocationQrSecret {
+  location_id: string;
+  secret: string;
+  rotated_at: string;
 }
 
 export interface LeaveRequest {
