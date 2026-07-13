@@ -68,6 +68,14 @@ export interface LeaveRequest {
   created_at: string;
 }
 
+export interface PayPeriod {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: "open" | "closed";
+  created_at: string;
+}
+
 export interface ShiftTemplate {
   id: string;
   name: string;

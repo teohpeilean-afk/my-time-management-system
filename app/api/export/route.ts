@@ -187,9 +187,98 @@ export async function GET(request: NextRequest) {
 
   rows.sort((a, b) => a.Date.localeCompare(b.Date) || a.Name.localeCompare(b.Name));
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
+  // ── Sheet 1: Summary — one row per employee, totals across the range ──
+  interface SummaryRow {
+    "Staff No": string;
+    Name: string;
+    "Days Worked": number;
+    "Normal Hours": number;
+    "Normal OT Hours": number;
+    "Rest Day Hours": number;
+    "Rest Day OT Hours": number;
+    "Public Holiday Hours": number;
+    "Public Holiday OT Hours": number;
+    "Late (min)": number;
+    "Absent Days": number;
+    "Leave Days": number;
+    "OT Pay (RM)": number;
+    "Rest Day Pay (RM)": number;
+    "PH Pay (RM)": number;
+    "Extra Pay (RM)": number;
+  }
+  const summaryByStaff = new Map<string, SummaryRow>();
+  for (const r of rows) {
+    let s = summaryByStaff.get(r["Staff No"]);
+    if (!s) {
+      s = {
+        "Staff No": r["Staff No"],
+        Name: r.Name,
+        "Days Worked": 0,
+        "Normal Hours": 0,
+        "Normal OT Hours": 0,
+        "Rest Day Hours": 0,
+        "Rest Day OT Hours": 0,
+        "Public Holiday Hours": 0,
+        "Public Holiday OT Hours": 0,
+        "Late (min)": 0,
+        "Absent Days": 0,
+        "Leave Days": 0,
+        "OT Pay (RM)": 0,
+        "Rest Day Pay (RM)": 0,
+        "PH Pay (RM)": 0,
+        "Extra Pay (RM)": 0,
+      };
+      summaryByStaff.set(r["Staff No"], s);
+    }
+    const workedHours =
+      r["Normal Hours"] + r["Normal OT Hours"] + r["Rest Day Hours"] + r["Rest Day OT Hours"] +
+      r["Public Holiday Hours"] + r["Public Holiday OT Hours"];
+    if (workedHours > 0) s["Days Worked"] += 1;
+    s["Normal Hours"] = round2(s["Normal Hours"] + r["Normal Hours"]);
+    s["Normal OT Hours"] = round2(s["Normal OT Hours"] + r["Normal OT Hours"]);
+    s["Rest Day Hours"] = round2(s["Rest Day Hours"] + r["Rest Day Hours"]);
+    s["Rest Day OT Hours"] = round2(s["Rest Day OT Hours"] + r["Rest Day OT Hours"]);
+    s["Public Holiday Hours"] = round2(s["Public Holiday Hours"] + r["Public Holiday Hours"]);
+    s["Public Holiday OT Hours"] = round2(s["Public Holiday OT Hours"] + r["Public Holiday OT Hours"]);
+    s["Late (min)"] += r["Late (min)"];
+    if (r.Absent === "Yes") s["Absent Days"] += 1;
+    if (r["Leave Type"]) s["Leave Days"] += 1;
+    s["OT Pay (RM)"] = round2(s["OT Pay (RM)"] + r["OT Pay (RM)"]);
+    s["Rest Day Pay (RM)"] = round2(s["Rest Day Pay (RM)"] + r["Rest Day Pay (RM)"]);
+    s["PH Pay (RM)"] = round2(s["PH Pay (RM)"] + r["PH Pay (RM)"]);
+    s["Extra Pay (RM)"] = round2(s["Extra Pay (RM)"] + r["Extra Pay (RM)"]);
+  }
+  const summaryRows = [...summaryByStaff.values()].sort((a, b) =>
+    a["Staff No"].localeCompare(b["Staff No"]),
+  );
+
+  // ── Sheet 3: Exceptions — anything payroll should eyeball first ──
+  const exceptionRows = rows
+    .map((r) => {
+      const issues: string[] = [];
+      if (r.Absent === "Yes") issues.push("Absent");
+      if (r["Missing Punch"] === "Yes") issues.push("Missing punch");
+      if (r["Late (min)"] > 0) issues.push(`Late ${r["Late (min)"]}m`);
+      if (r["Early Leave (min)"] > 0) issues.push(`Early leave ${r["Early Leave (min)"]}m`);
+      if (r["Rest Day Hours"] + r["Rest Day OT Hours"] > 0) issues.push("Rest-day work");
+      if (r["Public Holiday Hours"] + r["Public Holiday OT Hours"] > 0) issues.push("PH work");
+      if (issues.length === 0) return null;
+      return {
+        "Staff No": r["Staff No"],
+        Name: r.Name,
+        Date: r.Date,
+        "Clock In": r["Clock In"],
+        "Clock Out": r["Clock Out"],
+        Issues: issues.join(", "),
+        Reviewed: r.Reviewed,
+      };
+    })
+    .filter((r) => r !== null);
+
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Summary");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Summary");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Detail");
+  XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(exceptionRows), "Exceptions");
   const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
   const bytes = new Uint8Array(buffer);
 
