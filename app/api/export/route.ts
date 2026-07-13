@@ -2,11 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/server";
 import { formatTime, todayInKL } from "@/lib/attendance/format";
+import { calculateDayPay, type PayRates } from "@/lib/pay/calculatePay";
 import type { AttendanceDayWithEmployee } from "@/lib/attendance/review";
 import type { Employee, LeaveRequest, PublicHoliday } from "@/lib/types";
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+function ratesFor(emp: Employee | undefined): PayRates {
+  if (!emp) return { monthlySalary: 0, normalHoursPerDay: 8, otEligible: false };
+  const [sh, sm] = emp.shift_start.split(":").map(Number);
+  const [eh, em] = emp.shift_end.split(":").map(Number);
+  const shiftMinutes = Math.max(0, eh * 60 + em - (sh * 60 + sm) - emp.scheduled_break_minutes);
+  return {
+    monthlySalary: emp.monthly_salary ?? 0,
+    normalHoursPerDay: shiftMinutes > 0 ? shiftMinutes / 60 : 8,
+    otEligible: emp.ot_eligible ?? false,
+  };
 }
 
 function datesBetween(start: string, end: string): string[] {
@@ -40,6 +53,10 @@ interface ExportRow {
   "Missing Punch": string;
   Absent: string;
   "Leave Type": string;
+  "OT Pay (RM)": number;
+  "Rest Day Pay (RM)": number;
+  "PH Pay (RM)": number;
+  "Extra Pay (RM)": number;
   Reviewed: string;
 }
 
@@ -65,7 +82,7 @@ export async function GET(request: NextRequest) {
       .gte("work_date", start)
       .lte("work_date", end)
       .order("work_date", { ascending: true }),
-    supabase.from("employees").select("*").eq("active", true),
+    supabase.from("employees").select("*"),
     supabase.from("public_holidays").select("holiday_date").gte("holiday_date", start).lte("holiday_date", end),
     supabase
       .from("leave_requests")
@@ -80,34 +97,50 @@ export async function GET(request: NextRequest) {
   }
 
   const days = (data ?? []) as unknown as AttendanceDayWithEmployee[];
+  const employeeById = new Map(((employees as Employee[]) ?? []).map((e) => [e.id, e]));
 
-  const rows: ExportRow[] = days.map((d) => ({
-    "Staff No": d.employee.staff_no,
-    Name: d.employee.full_name,
-    Date: d.work_date,
-    "Clock In": formatTime(d.first_clock_in),
-    "Clock Out": formatTime(d.last_clock_out),
-    "Normal Hours": round2(d.normal_minutes / 60),
-    "Normal OT Hours": round2(d.normal_ot_minutes / 60),
-    "Rest Day Hours": round2(d.rest_day_minutes / 60),
-    "Rest Day OT Hours": round2(d.rest_day_ot_minutes / 60),
-    "Public Holiday Hours": round2(d.ph_minutes / 60),
-    "Public Holiday OT Hours": round2(d.ph_ot_minutes / 60),
-    "Late (min)": d.late_minutes,
-    "Early Leave (min)": d.early_leave_minutes,
-    "Missing Punch": d.missing_punch ? "Yes" : "",
-    Absent:
-      d.worked_minutes === 0 &&
-      !d.first_clock_in &&
-      !d.leave_type &&
-      !d.is_rest_day &&
-      !d.is_public_holiday &&
-      d.work_date < todayInKL()
-        ? "Yes"
-        : "",
-    "Leave Type": d.leave_type ?? "",
-    Reviewed: d.review_status === "reviewed" ? "Yes" : "No",
-  }));
+  const rows: ExportRow[] = days.map((d) => {
+    const pay = calculateDayPay(ratesFor(employeeById.get(d.employee_id)), {
+      workDate: d.work_date,
+      normalMinutes: d.normal_minutes,
+      normalOtMinutes: d.normal_ot_minutes,
+      restDayMinutes: d.rest_day_minutes,
+      restDayOtMinutes: d.rest_day_ot_minutes,
+      phMinutes: d.ph_minutes,
+      phOtMinutes: d.ph_ot_minutes,
+    });
+    return {
+      "Staff No": d.employee.staff_no,
+      Name: d.employee.full_name,
+      Date: d.work_date,
+      "Clock In": formatTime(d.first_clock_in),
+      "Clock Out": formatTime(d.last_clock_out),
+      "Normal Hours": round2(d.normal_minutes / 60),
+      "Normal OT Hours": round2(d.normal_ot_minutes / 60),
+      "Rest Day Hours": round2(d.rest_day_minutes / 60),
+      "Rest Day OT Hours": round2(d.rest_day_ot_minutes / 60),
+      "Public Holiday Hours": round2(d.ph_minutes / 60),
+      "Public Holiday OT Hours": round2(d.ph_ot_minutes / 60),
+      "Late (min)": d.late_minutes,
+      "Early Leave (min)": d.early_leave_minutes,
+      "Missing Punch": d.missing_punch ? "Yes" : "",
+      Absent:
+        d.worked_minutes === 0 &&
+        !d.first_clock_in &&
+        !d.leave_type &&
+        !d.is_rest_day &&
+        !d.is_public_holiday &&
+        d.work_date < todayInKL()
+          ? "Yes"
+          : "",
+      "Leave Type": d.leave_type ?? "",
+      "OT Pay (RM)": pay.normalOtPay,
+      "Rest Day Pay (RM)": round2(pay.restDayPay + pay.restDayOtPay),
+      "PH Pay (RM)": round2(pay.phPay + pay.phOtPay),
+      "Extra Pay (RM)": pay.extraPay,
+      Reviewed: d.review_status === "reviewed" ? "Yes" : "No",
+    };
+  });
 
   // A worker who never punched on a working day has no attendance_days row at
   // all (rows are only materialized by punch/leave/roster triggers), so with
@@ -119,7 +152,7 @@ export async function GET(request: NextRequest) {
   const existing = new Set(days.map((d) => `${d.employee_id}|${d.work_date}`));
   const today = todayInKL();
 
-  for (const emp of ((employees as Employee[]) ?? [])) {
+  for (const emp of ((employees as Employee[]) ?? []).filter((e) => e.active)) {
     for (const date of datesBetween(start, end)) {
       if (date >= today) continue;
       if (existing.has(`${emp.id}|${date}`)) continue;
@@ -143,6 +176,10 @@ export async function GET(request: NextRequest) {
         "Missing Punch": "",
         Absent: "Yes",
         "Leave Type": "",
+        "OT Pay (RM)": 0,
+        "Rest Day Pay (RM)": 0,
+        "PH Pay (RM)": 0,
+        "Extra Pay (RM)": 0,
         Reviewed: "No",
       });
     }

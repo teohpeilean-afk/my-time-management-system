@@ -20,6 +20,8 @@ export interface Employee {
   shift_start: string;
   shift_end: string;
   scheduled_break_minutes: number;
+  monthly_salary: number;
+  ot_eligible: boolean;
   active: boolean;
   created_at: string;
 }

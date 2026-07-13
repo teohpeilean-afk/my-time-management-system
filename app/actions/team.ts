@@ -30,3 +30,21 @@ export async function toggleEmployeeActive(employeeId: string, active: boolean) 
   revalidatePath("/team");
   return { ok: true };
 }
+
+export async function updateEmployeePay(
+  employeeId: string,
+  monthlySalary: number,
+  otEligible: boolean,
+) {
+  if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
+    return { ok: false, error: "Salary must be zero or more." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("employees")
+    .update({ monthly_salary: monthlySalary, ot_eligible: otEligible })
+    .eq("id", employeeId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/team");
+  return { ok: true };
+}
