@@ -82,7 +82,7 @@ export function PayPeriodManager({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+            className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-brand-600 dark:text-white"
           >
             Add period
           </button>
@@ -126,7 +126,7 @@ export function PayPeriodManager({
                     <div className="flex flex-wrap items-center gap-3">
                       <a
                         href={`/api/export?start=${p.start_date}&end=${p.end_date}`}
-                        className="text-sm text-blue-600 underline dark:text-blue-400"
+                        className="text-sm text-brand-700 underline dark:text-brand-300"
                       >
                         Export .xlsx
                       </a>

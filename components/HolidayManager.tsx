@@ -66,7 +66,7 @@ export function HolidayManager({ holidays, canWrite }: { holidays: PublicHoliday
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+            className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-brand-600 dark:text-white"
           >
             Add holiday
           </button>

@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* Brand green — the olive/forest tone from the user-journey flowchart.
+   Generates bg-brand-*, text-brand-*, border-brand-*, ring-brand-* utilities. */
+@theme {
+  --color-brand-50: #eaf3de;
+  --color-brand-100: #d7ebba;
+  --color-brand-200: #c0dd97;
+  --color-brand-300: #97c459;
+  --color-brand-400: #7aad36;
+  --color-brand-500: #639922;
+  --color-brand-600: #3b6d11;
+  --color-brand-700: #2c530c;
+  --color-brand-800: #27500a;
+  --color-brand-900: #173404;
+}

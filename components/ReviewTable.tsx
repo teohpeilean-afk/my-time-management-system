@@ -86,7 +86,7 @@ function ReviewRow({ day, canOverride }: { day: AttendanceDayWithEmployee; canOv
       <td className="px-4 py-2">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="text-sm text-blue-600 underline dark:text-blue-400"
+          className="text-sm text-brand-700 underline dark:text-brand-300"
         >
           {open ? "Close" : canOverride ? "Review" : "Details"}
         </button>
@@ -141,7 +141,7 @@ function ReviewRow({ day, canOverride }: { day: AttendanceDayWithEmployee; canOv
             <button
               disabled={pending}
               onClick={handleSave}
-              className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
+              className="rounded-md bg-brand-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-brand-600 dark:text-white"
             >
               Save &amp; mark reviewed
             </button>

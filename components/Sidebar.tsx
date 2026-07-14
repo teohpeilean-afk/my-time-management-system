@@ -40,8 +40,8 @@ function NavLinks({
             onClick={onNavigate}
             className={`rounded-md px-3 py-3 text-sm font-medium transition-colors ${
               active
-                ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
-                : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900"
+                ? "bg-brand-600 text-white dark:bg-brand-600 dark:text-white"
+                : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
             }`}
           >
             {item.label}
@@ -85,7 +85,7 @@ export function Sidebar({ authEmail }: { authEmail: string | null }) {
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
-          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-md text-neutral-700 active:bg-neutral-100 dark:text-neutral-300 dark:active:bg-neutral-900"
+          className="-mr-2 flex h-11 w-11 items-center justify-center rounded-md text-neutral-700 active:bg-neutral-100 dark:text-neutral-300 dark:active:bg-neutral-800"
         >
           {open ? (
             <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

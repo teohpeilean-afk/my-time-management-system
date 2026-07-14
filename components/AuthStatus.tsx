@@ -11,7 +11,7 @@ export function AuthStatus({ email }: { email: string | null }) {
     return (
       <Link
         href="/login"
-        className="block rounded-md px-2 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900"
+        className="block rounded-md px-2 py-1.5 text-sm font-medium text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
       >
         Log in
       </Link>
